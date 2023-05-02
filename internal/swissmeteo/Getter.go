@@ -33,14 +33,14 @@ func getWeather(zip string) (w Weather, err error) {
 	return w, nil
 }
 
-func GetTemp(zip string) (t float64, err error) {
+func GetTemp(zip string) (t float64, u int64, err error) {
 	// Get the weather
 	w, err := getWeather(zip)
 	if err != nil {
-		return t, err
+		return t, u, err
 	}
 	// Return the temperature
-	return w.CurrentWeather.Temperature, nil
+	return w.CurrentWeather.Temperature, w.CurrentWeather.Time, nil
 }
 
 type Weather struct {

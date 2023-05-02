@@ -5,7 +5,9 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/darox/sunly/internal/location"
 	"github.com/darox/sunly/internal/swissmeteo"
 	"github.com/spf13/cobra"
 )
@@ -37,12 +39,20 @@ func init() {
 func getTemp(zip string) {
 
 	// Get the weather
-	t, err := swissmeteo.GetTemp(zip)
+	t, u, err := swissmeteo.GetTemp(zip)
 	if err != nil {
 		fmt.Printf("Something went wrong when fetching the temperature: %s\n", err)
 		return
 	}
 
+	// Convert time to a human readable format
+	h := time.Unix(u/1000, 0)
+	f := h.Format("15:04 02.01.2006")
+
+	n, err := location.ZipToName(zip)
+	if err != nil {
+		n = "Unknown"
+	}
 	// Print the temperature to the console
-	fmt.Printf("The temperature in %s is %0.1f °C\n", zip, t)
+	fmt.Printf("Zip: %s\nLocation: %s\nTemperature: %0.1f C°\nUpdated at: %s\n", zip, n, t, f)
 }
