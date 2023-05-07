@@ -1,45 +1,53 @@
 /*
-Copyright © 2023 Dario Mader maderdario@gmail.com
+Sunly
+Copyright (C) 2023 Dario Mader
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 package cmd
 
 import (
 	"fmt"
 	"time"
 
-	"github.com/darox/sunly/internal/location"
-	"github.com/darox/sunly/internal/swissmeteo"
+	"github.com/darox/sunly/internal/printer"
+	"github.com/darox/sunly/pkg/swissmeteo"
+	"github.com/darox/sunly/pkg/swisspost"
 	"github.com/spf13/cobra"
 )
 
-// tempCmd represents the temp command
+// tempCmd represents the temp command.
 var tempCmd = &cobra.Command{
 	Use:   "temp",
 	Short: "Returns the temperature of a location by providing a postal code",
 	Long:  `Returns the temperature of a location by providing a postal code`,
 	Run: func(cmd *cobra.Command, args []string) {
-		getTemp(args[0])
+		getCurrentTemperature(args[0])
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(tempCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// tempCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// tempCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func getTemp(zip string) {
+func getCurrentTemperature(zip string) {
+	// Create a new weather object
+	w := swissmeteo.Weather{}
 
-	// Get the weather
-	t, u, err := swissmeteo.GetTemp(zip)
+	// Get the current temperature for the given zip code
+	temperature, u, err := w.GetCurrentTemperature(zip)
 	if err != nil {
 		fmt.Printf("Something went wrong when fetching the temperature: %s\n", err)
 		return
@@ -47,12 +55,27 @@ func getTemp(zip string) {
 
 	// Convert time to a human readable format
 	h := time.Unix(u/1000, 0)
-	f := h.Format("15:04 02.01.2006")
+	updatedAt := h.Format("15:04 02.01.2006")
 
-	n, err := location.ZipToName(zip)
+	// Create a new location object
+	ld := swisspost.LocationData{}
+
+	// Get the location data
+	err = ld.GetLocationDataByZip(zip)
+
 	if err != nil {
-		n = "Unknown"
+		fmt.Printf("Something went wrong when fetching the location: %s\n", err)
+		return
 	}
-	// Print the temperature to the console
-	fmt.Printf("Zip: %s\nLocation: %s\nTemperature: %0.1f C°\nUpdated at: %s\n", zip, n, t, f)
+
+	locationName := ld.Records[0].Fields.Ortbez18
+
+	// Check if the zip code is valid
+
+	if !ld.IsZipValid(zip) {
+		fmt.Printf("The zip code %s is not valid\n", zip)
+		return
+	}
+
+	printer.PrintCurrentTemperature(zip, locationName, temperature, updatedAt)
 }
