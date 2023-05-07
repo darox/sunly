@@ -1,45 +1,82 @@
+/*
+Sunly
+Copyright (C) 2023 Dario Mader
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package swissmeteo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 const (
-	API_URL = "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=%s"
+	apiURL = "https://app-prod-ws.meteoswiss-app.ch/v1/plzDetail?plz=%s"
 )
 
-func getWeather(zip string) (w Weather, err error) {
+// Gets the weather data from the API and decodes it into the Weather struct.
+func (w *Weather) getWeatherData(zip string) error {
 	// The meteoswiss API only accepts a zip code with a tailing 00
-	z := zip + "00"
-	// Fetch the weather from the API
-	r, err := http.Get(fmt.Sprintf(API_URL, z))
+	z := fmt.Sprintf("%s00", zip)
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+	defer cancel()
+
+	// Create a new request with the context
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf(apiURL, z), nil)
+
+	if err != nil {
+		err = fmt.Errorf("error fetching weather data: %w", err)
+		return err
+	}
+
+	// Execute the request
+	c := http.DefaultClient
+	resp, err := c.Do(req)
+
 	// Check for errors
 	if err != nil {
-		err = fmt.Errorf("Error fetching weather: %s", err)
-		return w, err
+		return fmt.Errorf("error getting weather data from API: %w", err)
 	}
+
 	// Close the body when we're done with it
-	defer r.Body.Close()
+	defer resp.Body.Close()
 
 	// Decode the JSON respons
-	err = json.NewDecoder(r.Body).Decode(&w)
+	err = json.NewDecoder(resp.Body).Decode(&w)
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
-	// Return the weather
-	return w, nil
+
+	return nil
 }
 
-func GetTemp(zip string) (t float64, u int64, err error) {
-	// Get the weather
-	w, err := getWeather(zip)
+// Returns the current temperature and the time of the last update.
+func (w *Weather) GetCurrentTemperature(zip string) (temperature float64, updatedAt int64, err error) {
+	err = w.getWeatherData(zip)
+
 	if err != nil {
-		return t, u, err
+		return temperature, updatedAt, err
 	}
-	// Return the temperature
+
 	return w.CurrentWeather.Temperature, w.CurrentWeather.Time, nil
 }
 
