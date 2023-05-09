@@ -34,7 +34,13 @@ var tempCmd = &cobra.Command{
 	Short: "Returns the temperature of a location by providing a postal code",
 	Long:  `Returns the temperature of a location by providing a postal code`,
 	Run: func(cmd *cobra.Command, args []string) {
-		getCurrentTemperature(args[0])
+		switch {
+		case rootCmd.PersistentFlags().Lookup("zip") != nil:
+			getCurrentTemperature(zip)
+		//TODO: Add location flag
+		default:
+			fmt.Println("Please provide a zip code")
+		}
 	},
 }
 
