@@ -20,7 +20,6 @@ package cmd
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/darox/sunly/internal/printer"
 	"github.com/darox/sunly/pkg/swissmeteo"
@@ -36,10 +35,13 @@ var tempCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		switch {
 		case rootCmd.PersistentFlags().Lookup("zip") != nil:
-			getCurrentTemperature(zip)
-		//TODO: Add location flag
+			l := rootCmd.PersistentFlags().Lookup("zip").Value.String()
+			getCurrentTemperature(l)
+		case rootCmd.PersistentFlags().Lookup("city") != nil:
+			l := rootCmd.PersistentFlags().Lookup("city").Value.String()
+			getCurrentTemperature(l)
 		default:
-			fmt.Println("Please provide a zip code")
+			fmt.Println("Please provide a postal code or a city name")
 		}
 	},
 }
@@ -48,40 +50,35 @@ func init() {
 	rootCmd.AddCommand(tempCmd)
 }
 
-func getCurrentTemperature(zip string) {
-	// Create a new weather object
+func getCurrentTemperature(locationIdentifier string) {
+	// Create a new weather struct
 	w := swissmeteo.Weather{}
 
-	// Get the current temperature for the given zip code
-	temperature, u, err := w.GetCurrentTemperature(zip)
+	// Get the current weather
+	c, err := w.GetCurrentWeather(locationIdentifier)
 	if err != nil {
 		fmt.Printf("Something went wrong when fetching the temperature: %s\n", err)
 		return
 	}
 
-	// Convert time to a human readable format
-	h := time.Unix(u/1000, 0)
-	updatedAt := h.Format("15:04 02.01.2006")
-
-	// Create a new location object
+	// Create a new location data struct
 	ld := swisspost.LocationData{}
 
-	// Get the location data
-	err = ld.GetLocationDataByZip(zip)
-
+	// Get the location data by zip code
+	err = ld.GetLocationDataByZip(locationIdentifier)
 	if err != nil {
 		fmt.Printf("Something went wrong when fetching the location: %s\n", err)
 		return
 	}
-
-	locationName := ld.Records[0].Fields.Ortbez18
-
 	// Check if the zip code is valid
-
 	if !ld.IsZipValid(zip) {
 		fmt.Printf("The zip code %s is not valid\n", zip)
 		return
 	}
 
-	printer.PrintCurrentTemperature(zip, locationName, temperature, updatedAt)
+	// Extract the city name from the location data
+	aCity := ld.Records[0].Fields.Ortbez18
+
+	// Print the current temperature
+	printer.PrintCurrentTemperature(c, zip, aCity)
 }

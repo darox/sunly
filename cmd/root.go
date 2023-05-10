@@ -39,8 +39,8 @@ var (
 		// has an action associated with it:
 		// Run: func(cmd *cobra.Command, args []string) { },
 	}
-	zip      string
-	location string
+	zip  string
+	city string
 )
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -60,7 +60,7 @@ func init() {
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.sunly.yaml)")
 
 	rootCmd.PersistentFlags().StringVar(&zip, "zip", "", "Postal code of the location")
-	rootCmd.PersistentFlags().StringVar(&location, "location", "", "Location name")
+	rootCmd.PersistentFlags().StringVar(&city, "city", "", "City name")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

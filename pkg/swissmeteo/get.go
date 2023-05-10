@@ -69,15 +69,22 @@ func (w *Weather) getWeatherData(zip string) error {
 	return nil
 }
 
-// Returns the current temperature and the time of the last update.
-func (w *Weather) GetCurrentTemperature(zip string) (temperature float64, updatedAt int64, err error) {
-	err = w.getWeatherData(zip)
-
+func (w *Weather) GetCurrentWeather(zip string) (CurrentWeather, error) {
+	// Get weather data from API
+	err := w.getWeatherData(zip)
 	if err != nil {
-		return temperature, updatedAt, err
+		return CurrentWeather{}, err
 	}
 
-	return w.CurrentWeather.Temperature, w.CurrentWeather.Time, nil
+	// Return the current weather
+	return w.CurrentWeather, nil
+}
+
+type CurrentWeather struct {
+	Time        int64   `json:"time"`
+	Icon        int     `json:"icon"`
+	IconV2      int     `json:"iconV2"`
+	Temperature float64 `json:"temperature"`
 }
 
 type Weather struct {
