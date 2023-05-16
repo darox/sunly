@@ -28,10 +28,13 @@ import (
 
 // This package is using the official swiss post API to convert a zip code to a location and vice versa.
 
-const apiURL = "https://swisspost.opendatasoft.com/api/records/1.0/search/?dataset=plz_" +
-	"verzeichnis_v2&&rows=50&facet=postleitzahl&facet=ortbez18&q=%s"
+const (
+	domain   = "https://swisspost.opendatasoft.com"
+	pathZips = "/api/records/1.0/search/?dataset=plz_verzeichnis_v2&q=&rows=20&refine.gplz=%s"
+	pathLoc  = "/api/records/1.0/search/?dataset=plz_verzeichnis_v2&q=&rows=20&refine.ortbez18=%s"
+)
 
-func (l *LocationData) GetLocationDataByZip(zip string) (err error) {
+func (l *LocationData) GetLocDatByZip(zip string) (err error) {
 	// Get the location data from the API
 
 	// Create context with timeout
@@ -39,7 +42,7 @@ func (l *LocationData) GetLocationDataByZip(zip string) (err error) {
 
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf(apiURL, zip), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf(domain+pathZips, zip), nil)
 
 	if err != nil {
 		err = fmt.Errorf("error fetching location: %w", err)
@@ -75,7 +78,7 @@ func (l *LocationData) GetLocationDataByName(name string) (err error) {
 
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf(apiURL, name), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf(domain+pathLoc, name), nil)
 
 	if err != nil {
 		err = fmt.Errorf("error fetching location: %w", err)
@@ -105,7 +108,7 @@ func (l *LocationData) GetLocationDataByName(name string) (err error) {
 
 func (l *LocationData) ConvertZipToName(zip string) (name string, err error) {
 	// Get the location data from the API
-	err = l.GetLocationDataByZip(zip)
+	err = l.GetLocDatByZip(zip)
 	if err != nil {
 		return name, err
 	}
@@ -114,15 +117,19 @@ func (l *LocationData) ConvertZipToName(zip string) (name string, err error) {
 	return l.Records[0].Fields.Ortbez18, nil
 }
 
-func (l *LocationData) ConvertNameToZip(name string) (zip string, err error) {
+func (l *LocationData) ConvertCityToZips(name string) (zip []string, err error) {
 	// Get the location data from the API
 	err = l.GetLocationDataByName(name)
 	if err != nil {
 		return zip, err
 	}
 
-	// Return the location
-	return l.Records[0].Fields.Postleitzahl, nil
+	for _, v := range l.Records {
+		zip = append(zip, v.Fields.Postleitzahl)
+	}
+
+	// Return the zip codes
+	return zip, nil
 }
 
 // Checks if the zip code is valid.
@@ -136,6 +143,21 @@ func (l *LocationData) IsZipValid(zip string) (valid bool) {
 	}
 
 	return true
+}
+
+func (l *LocationData) ExpandZipRange(zip string) (zips []string, err error) {
+	// Get the location data from the API
+	err = l.GetLocDatByZip(zip)
+	if err != nil {
+		err = fmt.Errorf("error getting location data from API: %w", err)
+		return zips, err
+	}
+
+	for _, v := range l.Records {
+		zips = append(zips, v.Fields.Postleitzahl)
+	}
+	// Return the zip codes
+	return zips, nil
 }
 
 type LocationData struct {

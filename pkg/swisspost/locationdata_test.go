@@ -20,7 +20,7 @@ func TestGetLocationDataByZip(t *testing.T) {
 	// Replace the default HTTP client with our mock client
 	http.DefaultClient = httpClient
 
-	err := l.GetLocationDataByZip("3006")
+	err := l.GetLocDatByZip("3006")
 
 	if err != nil {
 		t.Errorf("Error: %s", err)
@@ -100,13 +100,15 @@ func TestConvertNameToZip(t *testing.T) {
 	// Replace the default HTTP client with our mock client
 	http.DefaultClient = httpClient
 
-	zip, err := l.ConvertNameToZip("Bern")
+	zips, err := l.ConvertCityToZips("Bern")
 
 	if err != nil {
 		t.Errorf("Error: %s", err)
 	}
 
 	expectedZip := "3006"
+
+	zip := zips[0] // We only get one result back, so we can just check
 
 	if zip != expectedZip {
 		t.Errorf("Expected %s, got %s", expectedZip, zip)

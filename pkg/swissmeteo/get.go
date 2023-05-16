@@ -69,15 +69,19 @@ func (w *Weather) getWeatherData(zip string) error {
 	return nil
 }
 
-func (w *Weather) GetCurrentWeather(zip string) (CurrentWeather, error) {
-	// Get weather data from API
-	err := w.getWeatherData(zip)
-	if err != nil {
-		return CurrentWeather{}, err
+func (w *Weather) GetCurrentWeather(zip []string) (c CurrentWeather, matchedZip string, err error) {
+	for _, z := range zip {
+		err := w.getWeatherData(z)
+		if err != nil {
+			err = fmt.Errorf("error getting weather data: %w", err)
+			return w.CurrentWeather, "", err
+		}
+		if w.CurrentWeather.Time != 1684587000000 {
+			return w.CurrentWeather, z, nil
+		}
+		return w.CurrentWeather, "", nil
 	}
-
-	// Return the current weather
-	return w.CurrentWeather, nil
+	return w.CurrentWeather, "", nil
 }
 
 type CurrentWeather struct {

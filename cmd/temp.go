@@ -34,12 +34,18 @@ var tempCmd = &cobra.Command{
 	Long:  `Returns the temperature of a location by providing a postal code`,
 	Run: func(cmd *cobra.Command, args []string) {
 		switch {
-		case rootCmd.PersistentFlags().Lookup("zip") != nil:
-			l := rootCmd.PersistentFlags().Lookup("zip").Value.String()
-			getCurrentTemperature(l)
-		case rootCmd.PersistentFlags().Lookup("city") != nil:
-			l := rootCmd.PersistentFlags().Lookup("city").Value.String()
-			getCurrentTemperature(l)
+		case rootCmd.PersistentFlags().Lookup("zip").Value.String() != "":
+			zip := rootCmd.PersistentFlags().Lookup("zip").Value.String()
+			err := getCurrentTemperature("", zip)
+			if err != nil {
+				fmt.Printf("Something went wrong when fetching the temperature: %s\n", err)
+			}
+		case rootCmd.PersistentFlags().Lookup("city").Value.String() != "":
+			city := rootCmd.PersistentFlags().Lookup("city").Value.String()
+			err := getCurrentTemperature(city, "")
+			if err != nil {
+				fmt.Printf("Something went wrong when fetching the temperature: %s\n", err)
+			}
 		default:
 			fmt.Println("Please provide a postal code or a city name")
 		}
@@ -50,35 +56,54 @@ func init() {
 	rootCmd.AddCommand(tempCmd)
 }
 
-func getCurrentTemperature(locationIdentifier string) {
+func getCurrentTemperature(city string, zip string) error {
+	// Create a new location data struct
+	d := swisspost.LocationData{}
+
 	// Create a new weather struct
 	w := swissmeteo.Weather{}
+	zips := []string{}
 
-	// Get the current weather
-	c, err := w.GetCurrentWeather(locationIdentifier)
-	if err != nil {
-		fmt.Printf("Something went wrong when fetching the temperature: %s\n", err)
-		return
+	if city != "" {
+		var err error
+		zips, err = d.ConvertCityToZips(city)
+		if err != nil {
+			fmt.Printf("Something went wrong when fetching the location: %s\n", err)
+			return err
+		}
+	} else {
+		var err error
+		zips, err = d.ExpandZipRange(zip)
+		fmt.Println(zips)
+		if err != nil {
+
+		}
 	}
 
-	// Create a new location data struct
-	ld := swisspost.LocationData{}
+	var c swissmeteo.CurrentWeather
+
+	c, matchedZip, err := w.GetCurrentWeather(zips)
+	if err != nil {
+		return err
+	}
 
 	// Get the location data by zip code
-	err = ld.GetLocationDataByZip(locationIdentifier)
+	err = d.GetLocDatByZip(matchedZip)
 	if err != nil {
 		fmt.Printf("Something went wrong when fetching the location: %s\n", err)
-		return
+		return err
 	}
 	// Check if the zip code is valid
-	if !ld.IsZipValid(zip) {
+	if !d.IsZipValid(matchedZip) {
 		fmt.Printf("The zip code %s is not valid\n", zip)
-		return
+		return nil
 	}
 
 	// Extract the city name from the location data
-	aCity := ld.Records[0].Fields.Ortbez18
+	aCity := d.Records[0].Fields.Ortbez18
 
 	// Print the current temperature
-	printer.PrintCurrentTemperature(c, zip, aCity)
+	printer.PrintCurrentTemperature(c, matchedZip, aCity)
+
+	return nil
 }
