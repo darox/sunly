@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package cmd
+package sunly
 
 import (
 	"os"
@@ -28,16 +28,10 @@ import (
 var (
 	rootCmd = &cobra.Command{
 		Use:   "sunly",
-		Short: "A brief description of your application",
-		Long: `A longer description that spans multiple lines and likely contains
-	examples and usage of using your application. For example:
-
-	Cobra is a CLI library for Go that empowers applications.
-	This application is a tool to generate the needed files
-	to quickly create a Cobra application.`,
-		// Uncomment the following line if your bare application
-		// has an action associated with it:
-		// Run: func(cmd *cobra.Command, args []string) { },
+		Short: "sunly - a CLI tool to get the weather from MeteoSwiss",
+		Long: `sunly - a CLI tool to get the weather from MeteoSwiss. Examples:
+		sunly get current --zip 8000
+		sunly get forcecast --city Zurich`,
 	}
 	pZip  string
 	pCity string

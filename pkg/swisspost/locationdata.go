@@ -34,10 +34,17 @@ const (
 	pathLoc  = "/api/records/1.0/search/?dataset=plz_verzeichnis_v2&q=&rows=20&refine.ortbez18=%s"
 )
 
-func (l *LocationData) GetLocDatByZip(zip string) (err error) {
-	// Get the location data from the API
+func NewLocationDataFromZip() *LocationData {
+	return &LocationData{}
+}
 
-	// Create context with timeout
+func NewLocationDataFromCity() *LocationData {
+	return &LocationData{}
+}
+
+// Get location data by zip code
+func (l *LocationData) GetLocDatByZip(zip string) (err error) {
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 
 	defer cancel()
@@ -53,7 +60,6 @@ func (l *LocationData) GetLocDatByZip(zip string) (err error) {
 	c := http.DefaultClient
 	resp, err := c.Do(req)
 
-	// Check for errors
 	if err != nil {
 		return fmt.Errorf("error getting location data from API: %w", err)
 	}
@@ -70,7 +76,8 @@ func (l *LocationData) GetLocDatByZip(zip string) (err error) {
 	return nil
 }
 
-func (l *LocationData) GetLocationDataByName(name string) (err error) {
+// Get location data by city name
+func (l *LocationData) GetLocaDatByCity(name string) (err error) {
 	// Get the location data from the API
 
 	// Create context with timeout
@@ -117,9 +124,10 @@ func (l *LocationData) ConvertZipToName(zip string) (name string, err error) {
 	return l.Records[0].Fields.Ortbez18, nil
 }
 
+// Converts a city name to zips
 func (l *LocationData) ConvertCityToZips(name string) (zip []string, err error) {
 	// Get the location data from the API
-	err = l.GetLocationDataByName(name)
+	err = l.GetLocaDatByCity(name)
 	if err != nil {
 		return zip, err
 	}
@@ -145,6 +153,7 @@ func (l *LocationData) IsZipValid(zip string) (valid bool) {
 	return true
 }
 
+// Expands a zip code range to all zip codes in the range
 func (l *LocationData) ExpandZipRange(zip string) (zips []string, err error) {
 	// Get the location data from the API
 	err = l.GetLocDatByZip(zip)
